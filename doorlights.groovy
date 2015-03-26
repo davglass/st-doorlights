@@ -1,7 +1,7 @@
 /**
  *  Light on when closed, light off when open.
  *
- *  Copyright 2015 Dav Glass
+ *  Copyright 2014 Dav Glass
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -31,6 +31,9 @@ preferences {
     section("Which Door?") {
         input "door", "capability.contactSensor", multiple: false, required: true
     }
+    section("Delay off for seconds?") {
+        input "seconds", "number", title: "Seconds", required: false
+    }
 }
 
 def installed() {
@@ -51,17 +54,30 @@ def initialize() {
     subscribe(door, "contact", handler)
 }
 
+def off() {
+    lights.each {
+        log.debug "Turning off ${it.displayName}"
+        it.off()
+    }
+}
+
+def on() {
+    lights.each {
+        log.debug "Turning on ${it.displayName}"
+        it.on()
+    }
+}
+
 def handler(evt) {
-    log.debug "Door is ${evt.value}"
+    log.debug "${evt.displayName} is ${evt.value}"
     if (evt.value == "open") {
-        lights.each {
-            log.debug "Turning off ${it.displayName}"
-            it.off()
+        if (seconds) {
+            log.debug "Delaying off for ${seconds} seconds"
+            runIn(seconds, off)
+        } else {
+            off()
         }
     } else {
-        lights.each {
-            log.debug "Turning on ${it.displayName}"
-            it.on()
-        }
+        on()
     }
 }
